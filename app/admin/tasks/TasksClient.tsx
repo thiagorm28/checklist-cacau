@@ -145,6 +145,17 @@ function TaskForm({
                     {emp.name}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    selectedEmployeeIds.length === employees.length
+                      ? setSelectedEmployeeIds([])
+                      : setSelectedEmployeeIds(employees.map((e) => e.id))
+                  }
+                  className="px-2 py-1 rounded-lg text-xs font-medium border transition bg-white dark:bg-choco-700 text-choco-400 dark:text-choco-400 border-choco-200 dark:border-choco-600 hover:border-choco-400 dark:hover:border-choco-400"
+                >
+                  {selectedEmployeeIds.length === employees.length ? "Desmarcar todos" : "Selecionar todos"}
+                </button>
               </div>
             </>
           )}
@@ -212,8 +223,8 @@ function TaskForm({
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          disabled={loading}
-          className="bg-choco-600 hover:bg-choco-700 dark:bg-choco-500 dark:hover:bg-choco-400 text-white text-sm px-4 py-2 rounded-xl transition disabled:opacity-60"
+          disabled={loading || !title.trim() || selectedEmployeeIds.length === 0}
+          className="bg-choco-600 hover:bg-choco-700 dark:bg-choco-500 dark:hover:bg-choco-400 text-white text-sm px-4 py-2 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {loading ? "Salvando..." : "Salvar"}
         </button>
