@@ -13,6 +13,10 @@ type Task = {
   employee: { name: string };
 };
 
+type TaskInput = Omit<Task, "id" | "employee" | "recurrenceDays"> & {
+  recurrenceDays: number[];
+};
+
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function RecurrenceLabel({ type, days }: { type: string; days: number[] }) {
@@ -38,7 +42,7 @@ function TaskForm({
 }: {
   employees: Employee[];
   initial?: Partial<Task>;
-  onSave: (data: Omit<Task, "id" | "employee">) => Promise<void>;
+  onSave: (data: TaskInput) => Promise<void>;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -80,7 +84,7 @@ function TaskForm({
       description: description || null,
       employeeId: Number(employeeId),
       recurrenceType,
-      recurrenceDays: JSON.stringify(getRecurrenceDays()),
+      recurrenceDays: getRecurrenceDays(),
     });
     setLoading(false);
   }
@@ -193,7 +197,7 @@ export function TasksClient({
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
 
-  async function handleAdd(data: Omit<Task, "id" | "employee">) {
+  async function handleAdd(data: TaskInput) {
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -204,7 +208,7 @@ export function TasksClient({
     setShowForm(false);
   }
 
-  async function handleEdit(id: number, data: Omit<Task, "id" | "employee">) {
+  async function handleEdit(id: number, data: TaskInput) {
     const res = await fetch(`/api/tasks/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
