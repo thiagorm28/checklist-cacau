@@ -7,7 +7,10 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const employees = await prisma.employee.findMany({ orderBy: { name: "asc" } });
+  const employees = await prisma.employee.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <div className="min-h-screen bg-choco-50 dark:bg-choco-900 flex flex-col items-center justify-center px-4 relative">

@@ -10,6 +10,9 @@ datasource db {
 model Employee {
   id          Int              @id @default(autoincrement())
   name        String           @unique
+  cpf         String           @unique
+  birthDate   String
+  passwordHash String?
   tasks       Task[]
   completions TaskCompletion[]
   createdAt   DateTime         @default(now())

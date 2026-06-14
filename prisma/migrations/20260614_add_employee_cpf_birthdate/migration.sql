@@ -1,0 +1,5 @@
+ALTER TABLE "Employee" ADD COLUMN "cpf" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Employee" ADD COLUMN "birthDate" TEXT NOT NULL DEFAULT '';
+CREATE UNIQUE INDEX "Employee_cpf_key" ON "Employee"("cpf");
+ALTER TABLE "Employee" ALTER COLUMN "cpf" DROP DEFAULT;
+ALTER TABLE "Employee" ALTER COLUMN "birthDate" DROP DEFAULT;

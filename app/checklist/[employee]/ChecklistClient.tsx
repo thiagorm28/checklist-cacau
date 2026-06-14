@@ -28,6 +28,29 @@ export function ChecklistClient({
   const [tasks, setTasks] = useState(initialTasks);
   const [loading, setLoading] = useState<number | null>(null);
   const [expandedDesc, setExpandedDesc] = useState<Set<string>>(new Set());
+  const [showPwForm, setShowPwForm] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) { setPwError("As senhas não coincidem."); return; }
+    setPwLoading(true);
+    setPwError("");
+    const res = await fetch("/api/employees/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId, currentPassword: pwForm.current, newPassword: pwForm.next }),
+    });
+    const data = await res.json();
+    setPwLoading(false);
+    if (!res.ok) { setPwError(data.error); return; }
+    setPwSuccess(true);
+    setPwForm({ current: "", next: "", confirm: "" });
+    setTimeout(() => { setShowPwForm(false); setPwSuccess(false); }, 2000);
+  }
 
   const TRUNCATE_AT = 80;
 
@@ -158,6 +181,58 @@ export function ChecklistClient({
           </button>
           );
         })}
+      </div>
+
+      <div className="mt-6">
+        {showPwForm ? (
+          <div className="bg-white dark:bg-choco-800 rounded-2xl border border-choco-100 dark:border-choco-700 shadow p-5">
+            <p className="text-sm font-semibold text-choco-700 dark:text-choco-200 mb-4">Alterar senha</p>
+            {pwSuccess ? (
+              <p className="text-green-600 dark:text-green-400 text-sm">Senha alterada com sucesso!</p>
+            ) : (
+              <form onSubmit={handlePasswordChange} className="space-y-3">
+                {(["current", "next", "confirm"] as const).map((field) => (
+                  <div key={field}>
+                    <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">
+                      {field === "current" ? "Senha atual" : field === "next" ? "Nova senha" : "Confirmar nova senha"}
+                    </label>
+                    <input
+                      type="password"
+                      value={pwForm[field]}
+                      onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
+                      required
+                      className="w-full border border-choco-200 dark:border-choco-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-choco-700 text-choco-900 dark:text-choco-100 focus:outline-none focus:ring-2 focus:ring-choco-400 dark:focus:ring-choco-300"
+                    />
+                  </div>
+                ))}
+                {pwError && <p className="text-red-500 dark:text-red-400 text-sm">{pwError}</p>}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={pwLoading || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                    className="bg-choco-600 hover:bg-choco-700 dark:bg-choco-500 dark:hover:bg-choco-400 text-white text-sm px-4 py-2 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {pwLoading ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowPwForm(false); setPwError(""); setPwForm({ current: "", next: "", confirm: "" }); }}
+                    className="text-sm text-choco-500 dark:text-choco-400 hover:text-choco-700 dark:hover:text-choco-200"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowPwForm(true)}
+            className="text-xs text-choco-400 dark:text-choco-500 hover:text-choco-600 dark:hover:text-choco-300 transition underline"
+          >
+            Alterar senha
+          </button>
+        )}
       </div>
     </div>
   );

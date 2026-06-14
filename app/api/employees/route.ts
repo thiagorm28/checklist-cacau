@@ -11,13 +11,16 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-  const { name } = await req.json();
-  if (!name?.trim()) return NextResponse.json({ error: "Nome obrigatório" }, { status: 400 });
+  const { name, cpf, birthDate } = await req.json();
+  if (!name?.trim() || !cpf || !birthDate)
+    return NextResponse.json({ error: "Nome, CPF e data de nascimento são obrigatórios" }, { status: 400 });
 
   try {
-    const employee = await prisma.employee.create({ data: { name: name.trim() } });
+    const employee = await prisma.employee.create({
+      data: { name: name.trim(), cpf, birthDate },
+    });
     return NextResponse.json(employee, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Funcionário já existe" }, { status: 409 });
+    return NextResponse.json({ error: "Nome ou CPF já cadastrado" }, { status: 409 });
   }
 }
