@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  /* Chocolate brown scale */
+  --color-choco-50: #fdf8f0;
+  --color-choco-100: #f3e4c0;
+  --color-choco-200: #e4c890;
+  --color-choco-300: #cca060;
+  --color-choco-400: #a87840;
+  --color-choco-500: #7a5628;
+  --color-choco-600: #5c3814;
+  --color-choco-700: #3d2208;
+  --color-choco-800: #241404;
+  --color-choco-900: #140a02;
+}
+@custom-variant dark (&:where(.dark, .dark *));

@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  tasks       Task[]
+  completions TaskCompletion[]
+  createdAt   DateTime         @default(now())
+}
+
+model Task {
+  id             Int              @id @default(autoincrement())
+  title          String
+  description    String?
+  employee       Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId     Int
+  recurrenceType String
+  recurrenceDays String           @default("[]")
+  completions    TaskCompletion[]
+  createdAt      DateTime         @default(now())
+}
+
+model TaskCompletion {
+  id          Int      @id @default(autoincrement())
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      Int
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId  Int
+  date        String
+  completedAt DateTime @default(now())
+
+  @@unique([taskId, date])
+}
