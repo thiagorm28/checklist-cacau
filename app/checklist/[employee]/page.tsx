@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { isTaskDueOnDate, todayString } from "@/lib/recurrence";
+import { isTaskDueOnDate, getMostRecentOccurrenceBefore, subtractDays, todayString } from "@/lib/recurrence";
 import { notFound } from "next/navigation";
 import { ChecklistClient } from "./ChecklistClient";
 import { Logo } from "@/app/components/Logo";
@@ -9,26 +9,55 @@ export default async function ChecklistPage({ params }: { params: Promise<{ empl
   const { employee: encodedName } = await params;
   const name = decodeURIComponent(encodedName);
   const today = todayString();
+  const pastDateLimit = subtractDays(today, 31);
 
   const employee = await prisma.employee.findUnique({
     where: { name },
     include: {
       tasks: true,
-      completions: { where: { date: today } },
+      completions: { where: { date: { gte: pastDateLimit } } },
     },
   });
 
   if (!employee) notFound();
 
-  const dueTasks = employee.tasks.filter((t) => isTaskDueOnDate(t, today));
-  const completedIds = new Set(employee.completions.map((c) => c.taskId));
+  const dueTodayIds = new Set(
+    employee.tasks.filter((t) => isTaskDueOnDate(t, today)).map((t) => t.id)
+  );
 
-  const tasks = dueTasks.map((t) => ({
-    id: t.id,
-    title: t.title,
-    description: t.description,
-    completed: completedIds.has(t.id),
-  }));
+  const completedByTask = new Map<number, Set<string>>();
+  for (const c of employee.completions) {
+    if (!completedByTask.has(c.taskId)) completedByTask.set(c.taskId, new Set());
+    completedByTask.get(c.taskId)!.add(c.date);
+  }
+
+  const todayTasks = employee.tasks
+    .filter((t) => dueTodayIds.has(t.id))
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      completed: completedByTask.get(t.id)?.has(today) ?? false,
+      overdueDate: undefined as string | undefined,
+    }));
+
+  const overdueTasks = employee.tasks
+    .filter((t) => t.recurrenceType !== "daily" && !dueTodayIds.has(t.id))
+    .flatMap((t) => {
+      const lastDate = getMostRecentOccurrenceBefore(t, today);
+      if (!lastDate) return [];
+      const wasCompleted = completedByTask.get(t.id)?.has(lastDate) ?? false;
+      if (wasCompleted) return [];
+      return [{
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        completed: false,
+        overdueDate: lastDate,
+      }];
+    });
+
+  const tasks = [...overdueTasks, ...todayTasks];
 
   const dateLabel = new Date(today + "T12:00:00").toLocaleDateString("pt-BR", {
     weekday: "long", day: "numeric", month: "long",

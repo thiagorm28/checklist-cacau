@@ -13,7 +13,11 @@ type Task = {
   employee: { name: string };
 };
 
-type TaskInput = Omit<Task, "id" | "employee" | "recurrenceDays"> & {
+type TaskFormData = {
+  title: string;
+  description: string | null;
+  employeeIds: number[];
+  recurrenceType: string;
   recurrenceDays: number[];
 };
 
@@ -42,12 +46,15 @@ function TaskForm({
 }: {
   employees: Employee[];
   initial?: Partial<Task>;
-  onSave: (data: TaskInput) => Promise<void>;
+  onSave: (data: TaskFormData) => Promise<void>;
   onCancel: () => void;
 }) {
+  const isEdit = !!initial;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [employeeId, setEmployeeId] = useState(initial?.employeeId?.toString() ?? "");
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>(
+    initial?.employeeId != null ? [initial.employeeId] : []
+  );
   const [recurrenceType, setRecurrenceType] = useState(initial?.recurrenceType ?? "daily");
   const [selectedDays, setSelectedDays] = useState<number[]>(
     initial?.recurrenceDays ? JSON.parse(initial.recurrenceDays) : []
@@ -61,6 +68,12 @@ function TaskForm({
 
   function toggleDay(d: number) {
     setSelectedDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  }
+
+  function toggleEmployee(id: number) {
+    setSelectedEmployeeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   function getRecurrenceDays(): number[] {
@@ -77,12 +90,12 @@ function TaskForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !employeeId) return;
+    if (!title.trim() || selectedEmployeeIds.length === 0) return;
     setLoading(true);
     await onSave({
       title,
       description: description || null,
-      employeeId: Number(employeeId),
+      employeeIds: selectedEmployeeIds,
       recurrenceType,
       recurrenceDays: getRecurrenceDays(),
     });
@@ -97,18 +110,44 @@ function TaskForm({
           <input value={title} onChange={(e) => setTitle(e.target.value)} required className={inputClass} />
         </div>
         <div>
-          <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">Funcionário *</label>
-          <select
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
-            required
-            className={inputClass}
-          >
-            <option value="">Selecione...</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>{emp.name}</option>
-            ))}
-          </select>
+          {isEdit ? (
+            <>
+              <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">Funcionário *</label>
+              <select
+                value={selectedEmployeeIds[0]?.toString() ?? ""}
+                onChange={(e) => setSelectedEmployeeIds([Number(e.target.value)])}
+                required
+                className={inputClass}
+              >
+                <option value="">Selecione...</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">
+                Funcionários * <span className="text-choco-400 dark:text-choco-500 font-normal">(selecione um ou mais)</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {employees.map((emp) => (
+                  <button
+                    key={emp.id}
+                    type="button"
+                    onClick={() => toggleEmployee(emp.id)}
+                    className={`px-2 py-1 rounded-lg text-xs font-medium border transition ${
+                      selectedEmployeeIds.includes(emp.id)
+                        ? "bg-choco-600 dark:bg-choco-500 text-white border-choco-600 dark:border-choco-500"
+                        : "bg-white dark:bg-choco-700 text-choco-600 dark:text-choco-300 border-choco-300 dark:border-choco-600 hover:border-choco-500 dark:hover:border-choco-400"
+                    }`}
+                  >
+                    {emp.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -197,22 +236,26 @@ export function TasksClient({
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
 
-  async function handleAdd(data: TaskInput) {
-    const res = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const task = await res.json();
-    setTasks((prev) => [...prev, task]);
+  async function handleAdd(data: TaskFormData) {
+    const { employeeIds, ...rest } = data;
+    const newTasks = await Promise.all(
+      employeeIds.map((employeeId) =>
+        fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...rest, employeeId }),
+        }).then((r) => r.json())
+      )
+    );
+    setTasks((prev) => [...prev, ...newTasks]);
     setShowForm(false);
   }
 
-  async function handleEdit(id: number, data: TaskInput) {
+  async function handleEdit(id: number, data: TaskFormData) {
     const res = await fetch(`/api/tasks/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, employeeId: data.employeeIds[0] }),
     });
     const task = await res.json();
     setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
