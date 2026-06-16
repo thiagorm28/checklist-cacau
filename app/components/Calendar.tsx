@@ -60,6 +60,7 @@ export function Calendar({
       {/* Header — mês e ano + navegação */}
       <div className="flex items-center justify-between mb-4">
         <button
+          type="button"
           onClick={mesAnterior}
           className="w-8 h-8 flex items-center justify-center rounded-xl text-choco-500 dark:text-choco-300 hover:bg-choco-100 dark:hover:bg-choco-700 transition font-semibold text-lg leading-none"
         >
@@ -69,6 +70,7 @@ export function Calendar({
           {MESES[viewMes]} {viewAno}
         </span>
         <button
+          type="button"
           onClick={proximoMes}
           className="w-8 h-8 flex items-center justify-center rounded-xl text-choco-500 dark:text-choco-300 hover:bg-choco-100 dark:hover:bg-choco-700 transition font-semibold text-lg leading-none"
         >
@@ -100,6 +102,7 @@ export function Calendar({
           return (
             <button
               key={i}
+              type="button"
               onClick={() => selecionar(dia)}
               className={`
                 aspect-square rounded-xl text-xs font-medium transition-all flex items-center justify-center

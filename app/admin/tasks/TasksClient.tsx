@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Employee } from "@prisma/client";
+import { DatePicker } from "@/app/components/DatePicker";
 
 type Task = {
   id: number;
@@ -101,7 +102,7 @@ function TaskForm({
     return [];
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!title.trim() || selectedEmployeeIds.length === 0) return;
     if (recurrenceType === "once" && !onceDate) return;
@@ -240,13 +241,7 @@ function TaskForm({
           <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">
             Data *
           </label>
-          <input
-            type="date"
-            value={onceDate}
-            onChange={(e) => setOnceDate(e.target.value)}
-            required
-            className="border border-choco-200 dark:border-choco-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-choco-700 text-choco-900 dark:text-choco-100 focus:outline-none focus:ring-2 focus:ring-choco-400 dark:focus:ring-choco-300"
-          />
+          <DatePicker value={onceDate} onChange={setOnceDate} />
         </div>
       )}
 
