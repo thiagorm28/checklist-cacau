@@ -24,7 +24,7 @@ export default async function AdminDashboard() {
       <h1 className="text-2xl font-bold text-choco-800 dark:text-choco-100 mb-1">Dashboard</h1>
       <p className="text-choco-500 dark:text-choco-400 text-sm mb-6 capitalize">{dateLabel}</p>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white dark:bg-choco-800 rounded-xl shadow p-5 text-center border border-choco-100 dark:border-choco-700">
           <p className="text-3xl font-bold text-choco-600 dark:text-choco-300">{employees.length}</p>
           <p className="text-sm text-choco-500 dark:text-choco-400 mt-1">Funcionários</p>
