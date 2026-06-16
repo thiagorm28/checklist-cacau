@@ -18,19 +18,24 @@ type TaskFormData = {
   description: string | null;
   employeeIds: number[];
   recurrenceType: string;
-  recurrenceDays: number[];
+  recurrenceDays: (number | string)[];
 };
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function RecurrenceLabel({ type, days }: { type: string; days: number[] }) {
+function RecurrenceLabel({ type, days }: { type: string; days: (number | string)[] }) {
   if (type === "daily") return <span className="text-green-600 dark:text-green-400">Diária</span>;
   if (type === "weekly") {
-    const names = days.map((d) => WEEKDAYS[d]).join(", ");
+    const names = (days as number[]).map((d) => WEEKDAYS[d]).join(", ");
     return <span className="text-blue-600 dark:text-blue-400">Semanal: {names}</span>;
   }
   if (type === "monthly") {
     return <span className="text-purple-600 dark:text-purple-400">Mensal: dias {days.join(", ")}</span>;
+  }
+  if (type === "once") {
+    const iso = String(days[0]);
+    const [y, m, d] = iso.split("-");
+    return <span className="text-orange-600 dark:text-orange-400">Uma vez: {d}/{m}/{y}</span>;
   }
   return null;
 }
@@ -57,11 +62,18 @@ function TaskForm({
   );
   const [recurrenceType, setRecurrenceType] = useState(initial?.recurrenceType ?? "daily");
   const [selectedDays, setSelectedDays] = useState<number[]>(
-    initial?.recurrenceDays ? JSON.parse(initial.recurrenceDays) : []
+    initial?.recurrenceDays && initial.recurrenceType === "weekly"
+      ? JSON.parse(initial.recurrenceDays)
+      : []
   );
   const [monthDay, setMonthDay] = useState<string>(
     initial?.recurrenceDays && initial.recurrenceType === "monthly"
       ? JSON.parse(initial.recurrenceDays).join(", ")
+      : ""
+  );
+  const [onceDate, setOnceDate] = useState<string>(
+    initial?.recurrenceDays && initial.recurrenceType === "once"
+      ? JSON.parse(initial.recurrenceDays)[0] ?? ""
       : ""
   );
   const [loading, setLoading] = useState(false);
@@ -76,7 +88,7 @@ function TaskForm({
     );
   }
 
-  function getRecurrenceDays(): number[] {
+  function getRecurrenceDays(): (number | string)[] {
     if (recurrenceType === "daily") return [];
     if (recurrenceType === "weekly") return selectedDays;
     if (recurrenceType === "monthly") {
@@ -85,12 +97,14 @@ function TaskForm({
         .map((s) => parseInt(s.trim(), 10))
         .filter((n) => n >= 1 && n <= 31);
     }
+    if (recurrenceType === "once") return onceDate ? [onceDate] : [];
     return [];
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || selectedEmployeeIds.length === 0) return;
+    if (recurrenceType === "once" && !onceDate) return;
     setLoading(true);
     await onSave({
       title,
@@ -175,12 +189,13 @@ function TaskForm({
         <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">Recorrência *</label>
         <select
           value={recurrenceType}
-          onChange={(e) => { setRecurrenceType(e.target.value); setSelectedDays([]); setMonthDay(""); }}
+          onChange={(e) => { setRecurrenceType(e.target.value); setSelectedDays([]); setMonthDay(""); setOnceDate(""); }}
           className="border border-choco-200 dark:border-choco-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-choco-700 text-choco-900 dark:text-choco-100 focus:outline-none focus:ring-2 focus:ring-choco-400 dark:focus:ring-choco-300"
         >
           <option value="daily">Diária (todos os dias)</option>
           <option value="weekly">Semanal (dias da semana)</option>
           <option value="monthly">Mensal (dias do mês)</option>
+          <option value="once">Data específica (uma vez)</option>
         </select>
       </div>
 
@@ -220,10 +235,25 @@ function TaskForm({
         </div>
       )}
 
+      {recurrenceType === "once" && (
+        <div>
+          <label className="block text-xs font-medium text-choco-600 dark:text-choco-300 mb-1">
+            Data *
+          </label>
+          <input
+            type="date"
+            value={onceDate}
+            onChange={(e) => setOnceDate(e.target.value)}
+            required
+            className="border border-choco-200 dark:border-choco-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-choco-700 text-choco-900 dark:text-choco-100 focus:outline-none focus:ring-2 focus:ring-choco-400 dark:focus:ring-choco-300"
+          />
+        </div>
+      )}
+
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          disabled={loading || !title.trim() || selectedEmployeeIds.length === 0}
+          disabled={loading || !title.trim() || selectedEmployeeIds.length === 0 || (recurrenceType === "once" && !onceDate)}
           className="bg-choco-600 hover:bg-choco-700 dark:bg-choco-500 dark:hover:bg-choco-400 text-white text-sm px-4 py-2 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {loading ? "Salvando..." : "Salvar"}

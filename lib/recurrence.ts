@@ -5,12 +5,13 @@ function formatDate(d: Date): string {
 }
 
 export function isTaskDueOnDate(task: Task, dateStr: string): boolean {
-  const days: number[] = JSON.parse(task.recurrenceDays);
+  const days: (number | string)[] = JSON.parse(task.recurrenceDays);
   const date = new Date(dateStr + "T00:00:00");
 
   if (task.recurrenceType === "daily") return true;
-  if (task.recurrenceType === "weekly") return days.includes(date.getDay());
-  if (task.recurrenceType === "monthly") return days.includes(date.getDate());
+  if (task.recurrenceType === "weekly") return (days as number[]).includes(date.getDay());
+  if (task.recurrenceType === "monthly") return (days as number[]).includes(date.getDate());
+  if (task.recurrenceType === "once") return days[0] === dateStr;
   return false;
 }
 
